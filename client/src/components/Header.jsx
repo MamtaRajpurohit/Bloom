@@ -1,5 +1,6 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
+import { Link } from 'react-router-dom'; // Use Link for routing instead of href
 
 const Header = () => {
   return (
@@ -9,8 +10,13 @@ const Header = () => {
           🌸 Bloom - Empathy Chat Network
         </Typography>
         <Box>
-          <Button color="inherit" href="/">Home</Button>
-          <Button color="inherit" href="/about">About</Button>
+          {/* Navigation Links */}
+          <Button color="inherit" component={Link} to="/">Home</Button>
+          <Button color="inherit" component={Link} to="/about">About</Button>
+          <Button color="inherit" component={Link} to="/login">Login</Button>
+          <Button color="inherit" component={Link} to="/signup">Signup</Button>
+          <Button color="inherit" href="/profile">Profile</Button>
+
         </Box>
       </Toolbar>
     </AppBar>
@@ -18,3 +24,4 @@ const Header = () => {
 };
 
 export default Header;
+
