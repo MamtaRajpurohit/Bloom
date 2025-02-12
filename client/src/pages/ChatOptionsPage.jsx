@@ -24,7 +24,7 @@ const ChatOptionsPage = () => {
           variant="contained"
           style={{ marginTop: "20px", backgroundColor: "#ff6f61", color: "white" }}
           fullWidth
-          onClick={() => navigate("/mood-selection?type=friend")}
+          onClick={() => navigate("/friend")}
         >
           Chat with a Friend
         </Button>

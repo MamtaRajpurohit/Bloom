@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-import HomePage from "./pages/HomePage";
-import AboutPage from "./pages/AboutPage";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ProfilePage from "./pages/ProfilePage";
-import ChatOptionsPage from "./pages/ChatOptionsPage";
-import MoodSelectionPage from "./pages/MoodSelectionPage";
-import StrangerChat from "./pages/StrangerChat";
-import FriendChat from "./pages/FriendChat";
-import AIChat from "./pages/AIChat";
-import { getMessages, sendMessage } from "./utilis/api";
+import Header from "./components/Header.jsx";
+import Footer from "./components/Footer.jsx";
+import HomePage from "./pages/HomePage.jsx";
+import AboutPage from "./pages/AboutPage.jsx";
+import Login from "./pages/Login.jsx";
+import Signup from "./pages/Signup.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
+import ChatOptionsPage from "./pages/ChatOptionsPage.jsx";
+import MoodSelectionPage from "./pages/MoodSelectionPage.jsx";
+import StrangerChat from "./pages/StrangerChat.jsx";
+import FriendChat from "./pages/FriendChat.jsx";
+import AIChat from "./pages/AIChat.jsx";
+import { getMessages, sendMessage } from "./utilis/api.js";
 
 const App = () => {
   const [messages, setMessages] = useState([]);

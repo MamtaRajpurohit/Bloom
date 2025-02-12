@@ -1,114 +1,68 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Box, Button, Typography, Chip, CircularProgress, TextField } from "@mui/material";
-import {
-  setUserStatus,
-  findStrangerWithMood,
-  createChatSession,
-  saveChatMessage,
-  startAnonymousSession,
-  listenForAuthChanges,
-} from "../utilis/firebaseUtils";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db, auth } from "../firebase";
+import { onMatchFound, findStranger, sendMessageSocket, listenForMessages, sendFriendRequest } from "../utilis/api";
 
 const StrangerChat = () => {
   const [selectedMood, setSelectedMood] = useState(null);
-  const [chatSessionId, setChatSessionId] = useState(null);
+  const [chatStarted, setChatStarted] = useState(false);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [noStrangerFound, setNoStrangerFound] = useState(false);
+  const [currentStrangerId, setCurrentStrangerId] = useState(null); // Store the current stranger's ID
   const moods = ["Happy", "Sad", "Angry", "Excited", "Neutral"];
 
-  useEffect(() => {
-    const initializeSession = async () => {
-      try {
-        await startAnonymousSession();
-        listenForAuthChanges((user) => {
-          if (user) {
-            setUserId(user.uid);
-          }
-        });
-      } catch (error) {
-        console.error("Error starting session:", error);
-      }
-    };
+  const searchTimeoutRef = useRef(null);
 
-    initializeSession();
+  useEffect(() => {
+    // Handle match event
+    onMatchFound((data) => {
+      clearTimeout(searchTimeoutRef.current);
+      if (data) {
+        setCurrentStrangerId(data.id); // Store the stranger ID
+        setChatStarted(true);
+        setLoading(false);
+        setNoStrangerFound(false);
+        console.log("Matched with stranger:", data);
+      } else {
+        setLoading(false);
+        setNoStrangerFound(true);
+      }
+    });
+
+    listenForMessages((incomingMessage) => {
+      console.log("Incoming message:", incomingMessage);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { sender: "Stranger", text: incomingMessage },
+      ]);
+    });
+
+    return () => clearTimeout(searchTimeoutRef.current);
   }, []);
 
-  useEffect(() => {
-    if (chatSessionId) {
-      const chatRef = doc(db, "chats", chatSessionId);
-      const unsubscribe = onSnapshot(chatRef, (snapshot) => {
-        if (snapshot.exists()) {
-          setMessages(snapshot.data().messages || []);
-        }
-      });
-      return () => unsubscribe();
-    }
-  }, [chatSessionId]);
-
-  const handleMoodSelectionAndConnect = async () => {
+  const handleMoodSelectionAndConnect = () => {
     setLoading(true);
     setNoStrangerFound(false);
-
-    try {
-      if (!auth.currentUser) {
-        await startAnonymousSession();
-      }
-
-      const currentUserId = auth.currentUser?.uid;
-      if (!currentUserId) {
-        alert("Failed to establish session. Please try again.");
-        return;
-      }
-
-      await setUserStatus(currentUserId, selectedMood);
-
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("No users found within timeout")), 10000)
-      );
-
-      const strangerUser = await Promise.race([
-        findStrangerWithMood(currentUserId, selectedMood),
-        timeoutPromise,
-      ]);
-
-      if (strangerUser) {
-        const chatId = await createChatSession(currentUserId, strangerUser.userId);
-        setChatSessionId(chatId);
-      } else {
-        setNoStrangerFound(true);
-      }
-    } catch (error) {
-      if (error.message === "No users found within timeout") {
-        setNoStrangerFound(true);
-      } else {
-        console.error("Error establishing session:", error);
-        alert("Failed to start chat. Please try again.");
-      }
-    } finally {
+    console.log("Connecting with mood:", selectedMood || "No mood selected");
+    findStranger();
+    searchTimeoutRef.current = setTimeout(() => {
       setLoading(false);
-    }
+      setNoStrangerFound(true);
+      console.log("Timeout reached, no match found.");
+    }, 10000);
   };
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!message.trim()) return;
-
-    try {
-      await saveChatMessage(chatSessionId, userId, message);
-      setMessage("");
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      alert("Could not send message. Please try again.");
-    }
+    sendMessageSocket(message);
+    setMessages((prevMessages) => [...prevMessages, { sender: "You", text: message }]);
+    setMessage("");
   };
 
   return (
     <Box sx={{ p: 3 }}>
-      {!chatSessionId ? (
+      {!chatStarted ? (
         <>
           <Typography variant="h5" gutterBottom>
             Select Your Mood (Optional)
@@ -139,7 +93,7 @@ const StrangerChat = () => {
           <Box sx={{ border: "1px solid gray", p: 2, mt: 3, minHeight: "300px" }}>
             {messages.map((msg, index) => (
               <Typography key={index}>
-                {msg.senderId === userId ? "You" : "Stranger"}: {msg.message}
+                {msg.sender}: {msg.text}
               </Typography>
             ))}
           </Box>
@@ -153,6 +107,14 @@ const StrangerChat = () => {
           <Button variant="contained" onClick={handleSendMessage} sx={{ mt: 1 }}>
             Send Message
           </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => sendFriendRequest(currentStrangerId)}
+            sx={{ mt: 2 }}
+          >
+            Send Friend Request
+          </Button>
         </>
       )}
     </Box>
@@ -160,6 +122,13 @@ const StrangerChat = () => {
 };
 
 export default StrangerChat;
+
+
+
+
+
+
+
 
 
 

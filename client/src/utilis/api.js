@@ -1,34 +1,27 @@
 import { io } from "socket.io-client";
 
-const API_URL = "http://192.168.29.112:5000";
+const API_URL = "http:// 192.168.29.112:5000";
 
-const socket = io(API_URL, {
+
+export const socket = io(API_URL, {
   reconnection: true,
-  reconnectionAttempts: 5,
-  reconnectionDelay: 1000,
+  reconnectionAttempts: 10, // Try 10 times
+  reconnectionDelay: 2000,  // 2-second delay
+  timeout: 20000,           // 20-second connection timeout
 });
+
 
 // Ensure it doesn't connect multiple times
 if (!socket.connected) {
   socket.connect();
 }
 
-let matchCallback = null;
-
-socket.emit("find_stranger");
-console.log("Finding a stranger...");
 
 
-socket.on("matched", (data) => {
-  console.log("Matched with stranger:", JSON.stringify(data, null, 2));
-  if (matchCallback) {
-    matchCallback(data);
-  }
-});
-
-socket.on("no_stranger_found", () => {
-  console.log("No stranger found");
-});
+export const findStranger = () => {
+  socket.emit("find_stranger");
+  console.log("Finding a stranger...");
+};
 
 export const connectSocket = () => {
   socket.connect();
@@ -39,7 +32,14 @@ export const disconnectSocket = () => {
 };
 
 export const onMatchFound = (callback) => {
-  matchCallback = callback;
+  socket.on("matched", (data) => {
+    console.log("Matched with stranger:", JSON.stringify(data, null, 2));
+    if (callback) callback(data);
+  });
+
+  socket.on("no_stranger_found", () => {
+    console.log("No stranger found");
+  });
 };
 
 export const sendMessageSocket = (message) => {
@@ -47,7 +47,9 @@ export const sendMessageSocket = (message) => {
 };
 
 export const listenForMessages = (callback) => {
+  socket.off("message");
   socket.on("message", (message) => {
+    console.log("Message received:", message);
     callback(message);
   });
 };
@@ -77,6 +79,25 @@ export const sendMessage = async (newMessage) => {
     console.error("Error sending message:", error);
   }
 };
+
+export const sendFriendRequest = (strangerId) => {
+  socket.emit("send_friend_request", strangerId);
+  console.log("Friend request sent!");
+};
+
+socket.on("friend_request_received", (strangerId) => {
+  if (window.confirm(`Friend request received from ${strangerId}. Accept?`)) {
+    socket.emit("accept_friend_request", strangerId);
+  }
+});
+
+socket.on("friend_request_accepted", (friendId) => {
+  alert(`Friend request accepted by ${friendId}!`);
+});
+
+socket.on("friend_list", (friends) => {
+  console.log("Your friends:", friends);
+});
 
 export const signup = async (userDetails) => {
   try {
@@ -109,6 +130,9 @@ export const login = async (credentials) => {
     console.error("Login error:", error);
   }
 };
+
+
+
 
 
 
