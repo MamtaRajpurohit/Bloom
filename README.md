@@ -24,7 +24,7 @@ Deployment: Vercel (Frontend), Render (Backend)
 bash
 Copy
 Edit
-git clone https://github.com/your-username/empathy-chat-network.git
+git clone https://github.com/MamtaRajpurohit/empathy-chat-network.git
 cd empathy-chat-network
 2️⃣ Backend Setup
 bash
